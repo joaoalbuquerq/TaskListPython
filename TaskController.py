@@ -19,6 +19,23 @@ class ServidorTarefas(BaseHTTPRequestHandler):
             self._set_headers()
             self.wfile.write(json.dumps(tarefas).encode())
 
+        # ROTA PARA BUSCAR UMA TAREFA POR ID
+        elif self.path.startswith("/tarefas/"):
+            
+            try:
+                tarefa_id = int(self.path.split("/")[-1])
+                tarefa = next((t for t in tarefas if t["id"] == tarefa_id), None)
+
+                if tarefa:
+                    self._set_headers()
+                    self.wfile.write(json.dumps(tarefa).encode())
+                else:
+                    self._set_headers(404)
+                    self.wfile.write(b'{"erro": "Tarefa nao encontrada"}')
+                    
+            except ValueError:
+                self._set_headers(400)
+                self.wfile.write(b'{"erro": "ID invalido"}')
 
 if __name__ == "__main__":
     servidor = HTTPServer(("localhost", 8000), ServidorTarefas)
