@@ -67,12 +67,14 @@ class ServidorTarefas(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        # ROTA PARA LISTAR TODAS AS TAREFAS
         if self.path == "/tarefas":
+            cur.execute("SELECT * FROM tarefas ORDER BY id")
+            tarefas = cur.fetchall()
             self._set_headers()
-            self.wfile.write(json.dumps(tarefas).encode())
-
+            self.wfile.write(json.dumps(tarefas, default=str).encode())
         # ROTA PARA BUSCAR UMA TAREFA POR ID
         elif self.path.startswith("/tarefas/"):
             
