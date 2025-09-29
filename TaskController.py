@@ -96,22 +96,25 @@ class ServidorTarefas(BaseHTTPRequestHandler):
     
     def do_POST(self):
         if self.path == "/tarefas":
-            # Criar uma nova tarefa
-            global contador_id
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length).decode()
             dados = json.loads(body)
 
-            nova_tarefa = {
-                "id": contador_id,
-                "titulo": dados.get("titulo", "Sem titulo"),
-                "descricao": dados.get("descricao", "")
-            }
-            tarefas.append(nova_tarefa)
-            contador_id += 1
+            conn = get_connection()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+            cur.execute(
+                "INSERT INTO tarefas (titulo, descricao, status) VALUES (%s, %s, %s) RETURNING *",
+                (dados.get("titulo"), dados.get("descricao"), dados.get("status", "pendente"))
+            )
+            nova_tarefa = cur.fetchone()
+            conn.commit()
 
             self._set_headers(201)
-            self.wfile.write(json.dumps(nova_tarefa).encode())
+            self.wfile.write(json.dumps(nova_tarefa, default=str).encode())
+
+            cur.close()
+            conn.close()
     
     def do_DELETE(self):
         if self.path.startswith("/tarefas/"):
