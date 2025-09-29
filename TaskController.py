@@ -144,36 +144,37 @@ class ServidorTarefas(BaseHTTPRequestHandler):
 
     
         def do_PUT(self):
-        if self.path.startswith("/tarefas/"):
-            try:
-                tarefa_id = int(self.path.split("/")[-1])
-                content_length = int(self.headers.get("Content-Length", 0))
-                body = self.rfile.read(content_length).decode()
-                dados = json.loads(body)
 
-                conn = get_connection()
-                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            if self.path.startswith("/tarefas/"):
+                try:
+                    tarefa_id = int(self.path.split("/")[-1])
+                    content_length = int(self.headers.get("Content-Length", 0))
+                    body = self.rfile.read(content_length).decode()
+                    dados = json.loads(body)
 
-                cur.execute(
-                    "UPDATE tarefas SET titulo = COALESCE(%s, titulo), descricao = COALESCE(%s, descricao), status = COALESCE(%s, status) WHERE id = %s RETURNING *",
-                    (dados.get("titulo"), dados.get("descricao"), dados.get("status"), tarefa_id)
-                )
-                tarefa_atualizada = cur.fetchone()
-                conn.commit()
+                    conn = get_connection()
+                    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-                if tarefa_atualizada:
-                    self._set_headers()
-                    self.wfile.write(json.dumps(tarefa_atualizada, default=str).encode())
-                else:
-                    self._set_headers(404)
-                    self.wfile.write(b'{"erro": "Tarefa nao encontrada"}')
+                    cur.execute(
+                        "UPDATE tarefas SET titulo = COALESCE(%s, titulo), descricao = COALESCE(%s, descricao), status = COALESCE(%s, status) WHERE id = %s RETURNING *",
+                        (dados.get("titulo"), dados.get("descricao"), dados.get("status"), tarefa_id)
+                    )
+                    tarefa_atualizada = cur.fetchone()
+                    conn.commit()
 
-                cur.close()
-                conn.close()
+                    if tarefa_atualizada:
+                        self._set_headers()
+                        self.wfile.write(json.dumps(tarefa_atualizada, default=str).encode())
+                    else:
+                        self._set_headers(404)
+                        self.wfile.write(b'{"erro": "Tarefa nao encontrada"}')
 
-            except ValueError:
-                self._set_headers(400)
-                self.wfile.write(b'{"erro": "ID invalido"}')
+                    cur.close()
+                    conn.close()
+
+                except ValueError:
+                    self._set_headers(400)
+                    self.wfile.write(b'{"erro": "ID invalido"}')
 
 
 if __name__ == "__main__":
