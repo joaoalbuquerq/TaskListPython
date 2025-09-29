@@ -69,6 +69,29 @@ class ServidorTarefas(BaseHTTPRequestHandler):
             except ValueError:
                 self._set_headers(400)
                 self.wfile.write(b'{"erro": "ID invalido"}')
+    
+    def do_PUT(self):
+        if self.path.startswith("/tarefas/"):
+            try:
+                tarefa_id = int(self.path.split("/")[-1])
+                content_length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(content_length).decode()
+                dados = json.loads(body)
+
+                for tarefa in tarefas:
+                    if tarefa["id"] == tarefa_id:
+                        tarefa["titulo"] = dados.get("titulo", tarefa["titulo"])
+                        tarefa["descricao"] = dados.get("descricao", tarefa["descricao"])
+                        self._set_headers()
+                        self.wfile.write(json.dumps(tarefa).encode())
+                        return
+
+                self._set_headers(404)
+                self.wfile.write(b'{"erro": "Tarefa nao encontrada"}')
+
+            except ValueError:
+                self._set_headers(400)
+                self.wfile.write(b'{"erro": "ID invalido"}')
 
 
 if __name__ == "__main__":
