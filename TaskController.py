@@ -120,17 +120,30 @@ class ServidorTarefas(BaseHTTPRequestHandler):
         if self.path.startswith("/tarefas/"):
             try:
                 tarefa_id = int(self.path.split("/")[-1])
-                global tarefas
-                tarefas = [t for t in tarefas if t["id"] != tarefa_id]
 
-                self._set_headers(204)  # Sem conteúdo
-                self.wfile.write(b"")
+                conn = get_connection()
+                cur = conn.cursor()
+
+                cur.execute("DELETE FROM tarefas WHERE id = %s RETURNING id", (tarefa_id,))
+                deletada = cur.fetchone()
+                conn.commit()
+
+                if deletada:
+                    self._set_headers(204)
+                    self.wfile.write(b"")
+                else:
+                    self._set_headers(404)
+                    self.wfile.write(b'{"erro": "Tarefa nao encontrada"}')
+
+                cur.close()
+                conn.close()
 
             except ValueError:
                 self._set_headers(400)
                 self.wfile.write(b'{"erro": "ID invalido"}')
+
     
-    def do_PUT(self):
+        def do_PUT(self):
         if self.path.startswith("/tarefas/"):
             try:
                 tarefa_id = int(self.path.split("/")[-1])
@@ -138,16 +151,25 @@ class ServidorTarefas(BaseHTTPRequestHandler):
                 body = self.rfile.read(content_length).decode()
                 dados = json.loads(body)
 
-                for tarefa in tarefas:
-                    if tarefa["id"] == tarefa_id:
-                        tarefa["titulo"] = dados.get("titulo", tarefa["titulo"])
-                        tarefa["descricao"] = dados.get("descricao", tarefa["descricao"])
-                        self._set_headers()
-                        self.wfile.write(json.dumps(tarefa).encode())
-                        return
+                conn = get_connection()
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-                self._set_headers(404)
-                self.wfile.write(b'{"erro": "Tarefa nao encontrada"}')
+                cur.execute(
+                    "UPDATE tarefas SET titulo = COALESCE(%s, titulo), descricao = COALESCE(%s, descricao), status = COALESCE(%s, status) WHERE id = %s RETURNING *",
+                    (dados.get("titulo"), dados.get("descricao"), dados.get("status"), tarefa_id)
+                )
+                tarefa_atualizada = cur.fetchone()
+                conn.commit()
+
+                if tarefa_atualizada:
+                    self._set_headers()
+                    self.wfile.write(json.dumps(tarefa_atualizada, default=str).encode())
+                else:
+                    self._set_headers(404)
+                    self.wfile.write(b'{"erro": "Tarefa nao encontrada"}')
+
+                cur.close()
+                conn.close()
 
             except ValueError:
                 self._set_headers(400)
