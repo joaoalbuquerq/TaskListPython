@@ -55,6 +55,20 @@ class ServidorTarefas(BaseHTTPRequestHandler):
 
             self._set_headers(201)
             self.wfile.write(json.dumps(nova_tarefa).encode())
+    
+    def do_DELETE(self):
+        if self.path.startswith("/tarefas/"):
+            try:
+                tarefa_id = int(self.path.split("/")[-1])
+                global tarefas
+                tarefas = [t for t in tarefas if t["id"] != tarefa_id]
+
+                self._set_headers(204)  # Sem conteúdo
+                self.wfile.write(b"")
+
+            except ValueError:
+                self._set_headers(400)
+                self.wfile.write(b'{"erro": "ID invalido"}')
 
 
 if __name__ == "__main__":
