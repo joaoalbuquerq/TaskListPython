@@ -1,9 +1,16 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import psycopg2
+import psycopg2.extras
 
-# "Banco de dados" em memória
-tarefas = []
-contador_id = 1
+def get_connection():
+    return psycopg2.connect(
+        dbname="tarefas_db",
+        user="postgres",     
+        password="rfB6J84WJH29",   
+        host="10.2.1.11",
+        port="5432"
+)
 
 
 class ServidorTarefas(BaseHTTPRequestHandler):
