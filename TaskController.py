@@ -70,13 +70,13 @@ class ServidorTarefas(BaseHTTPRequestHandler):
         conn = get_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        if self.path == "/tarefas":
+        if self.path == "/task":
             cur.execute("SELECT * FROM tarefas ORDER BY id")
             tarefas = cur.fetchall()
             self._set_headers()
             self.wfile.write(json.dumps(tarefas, default=str).encode())
         
-        elif self.path.startswith("/tarefas/"):
+        elif self.path.startswith("/task/"):
             try:
                 tarefa_id = int(self.path.split("/")[-1])
                 cur.execute("SELECT * FROM tarefas WHERE id = %s", (tarefa_id,))
@@ -95,7 +95,7 @@ class ServidorTarefas(BaseHTTPRequestHandler):
         conn.close()
     
     def do_POST(self):
-        if self.path == "/tarefas":
+        if self.path == "/task":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length).decode()
             dados = json.loads(body)
@@ -117,7 +117,7 @@ class ServidorTarefas(BaseHTTPRequestHandler):
             conn.close()
     
     def do_DELETE(self):
-        if self.path.startswith("/tarefas/"):
+        if self.path.startswith("/task/"):
             try:
                 tarefa_id = int(self.path.split("/")[-1])
 
@@ -144,7 +144,7 @@ class ServidorTarefas(BaseHTTPRequestHandler):
 
     
     def do_PUT(self):
-        if self.path.startswith("/tarefas/"):
+        if self.path.startswith("/task/"):
             try:
                 tarefa_id = int(self.path.split("/")[-1])
 
