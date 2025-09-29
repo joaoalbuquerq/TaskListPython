@@ -36,6 +36,26 @@ class ServidorTarefas(BaseHTTPRequestHandler):
             except ValueError:
                 self._set_headers(400)
                 self.wfile.write(b'{"erro": "ID invalido"}')
+    
+    def do_POST(self):
+        if self.path == "/tarefas":
+            # Criar uma nova tarefa
+            global contador_id
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode()
+            dados = json.loads(body)
+
+            nova_tarefa = {
+                "id": contador_id,
+                "titulo": dados.get("titulo", "Sem titulo"),
+                "descricao": dados.get("descricao", "")
+            }
+            tarefas.append(nova_tarefa)
+            contador_id += 1
+
+            self._set_headers(201)
+            self.wfile.write(json.dumps(nova_tarefa).encode())
+
 
 if __name__ == "__main__":
     servidor = HTTPServer(("localhost", 8000), ServidorTarefas)
