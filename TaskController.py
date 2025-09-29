@@ -143,38 +143,54 @@ class ServidorTarefas(BaseHTTPRequestHandler):
                 self.wfile.write(b'{"erro": "ID invalido"}')
 
     
-        def do_PUT(self):
+    def do_PUT(self):
+        if self.path.startswith("/tarefas/"):
+            try:
+                tarefa_id = int(self.path.split("/")[-1])
 
-            if self.path.startswith("/tarefas/"):
-                try:
-                    tarefa_id = int(self.path.split("/")[-1])
-                    content_length = int(self.headers.get("Content-Length", 0))
-                    body = self.rfile.read(content_length).decode()
-                    dados = json.loads(body)
+                content_length = int(self.headers["Content-Length"])
+                put_data = self.rfile.read(content_length)
+                dados = json.loads(put_data.decode("utf-8"))
 
-                    conn = get_connection()
-                    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+                campos = []
+                valores = []
 
-                    cur.execute(
-                        "UPDATE tarefas SET titulo = COALESCE(%s, titulo), descricao = COALESCE(%s, descricao), status = COALESCE(%s, status) WHERE id = %s RETURNING *",
-                        (dados.get("titulo"), dados.get("descricao"), dados.get("status"), tarefa_id)
-                    )
-                    tarefa_atualizada = cur.fetchone()
-                    conn.commit()
+                if "titulo" in dados:
+                    campos.append("titulo = %s")
+                    valores.append(dados["titulo"])
 
-                    if tarefa_atualizada:
-                        self._set_headers()
-                        self.wfile.write(json.dumps(tarefa_atualizada, default=str).encode())
-                    else:
-                        self._set_headers(404)
-                        self.wfile.write(b'{"erro": "Tarefa nao encontrada"}')
+                if "descricao" in dados:
+                    campos.append("descricao = %s")
+                    valores.append(dados["descricao"])
 
-                    cur.close()
-                    conn.close()
+                if "status" in dados:
+                    campos.append("status = %s")
+                    valores.append(dados["status"])
 
-                except ValueError:
+                if not campos:
                     self._set_headers(400)
-                    self.wfile.write(b'{"erro": "ID invalido"}')
+                    self.wfile.write(json.dumps({"erro": "Nenhum campo enviado para atualizar"}).encode("utf-8"))
+                    return
+
+            
+                valores.append(tarefa_id)
+
+                sql = f"UPDATE tarefas SET {', '.join(campos)} WHERE id = %s"
+
+                conn = get_connection()
+                cur = conn.cursor()
+                cur.execute(sql, tuple(valores))
+                conn.commit()
+                cur.close()
+                conn.close()
+
+                self._set_headers(200)
+                self.wfile.write(json.dumps({"mensagem": "Tarefa atualizada com sucesso"}).encode("utf-8"))
+
+            except Exception as e:
+                self._set_headers(500)
+                self.wfile.write(json.dumps({"erro": str(e)}).encode("utf-8"))
 
 
 if __name__ == "__main__":
