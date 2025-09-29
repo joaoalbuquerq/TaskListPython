@@ -75,23 +75,24 @@ class ServidorTarefas(BaseHTTPRequestHandler):
             tarefas = cur.fetchall()
             self._set_headers()
             self.wfile.write(json.dumps(tarefas, default=str).encode())
-        # ROTA PARA BUSCAR UMA TAREFA POR ID
+        
         elif self.path.startswith("/tarefas/"):
-            
             try:
                 tarefa_id = int(self.path.split("/")[-1])
-                tarefa = next((t for t in tarefas if t["id"] == tarefa_id), None)
-
+                cur.execute("SELECT * FROM tarefas WHERE id = %s", (tarefa_id,))
+                tarefa = cur.fetchone()
                 if tarefa:
                     self._set_headers()
-                    self.wfile.write(json.dumps(tarefa).encode())
+                    self.wfile.write(json.dumps(tarefa, default=str).encode())
                 else:
                     self._set_headers(404)
                     self.wfile.write(b'{"erro": "Tarefa nao encontrada"}')
-                    
             except ValueError:
                 self._set_headers(400)
                 self.wfile.write(b'{"erro": "ID invalido"}')
+
+        cur.close()
+        conn.close()
     
     def do_POST(self):
         if self.path == "/tarefas":
