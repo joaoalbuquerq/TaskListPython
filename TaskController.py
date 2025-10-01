@@ -7,9 +7,9 @@ from psycopg2 import sql
 # Configurações do banco
 DB_NAME = "tarefas_db"
 USER = "postgres"      
-PASSWORD = "rfB6J84WJH29"  
-HOST = "10.2.1.11"
-PORT = "5432"
+PASSWORD = "postgres"  
+HOST = "localhost"
+PORT = "3030"
 
 def criarBanco():
     conn = psycopg2.connect(dbname="postgres", user=USER, password=PASSWORD, host=HOST, port=PORT)
